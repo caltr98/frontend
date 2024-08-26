@@ -60,6 +60,7 @@ export class SettingsComponent implements OnInit {
       });
   }
 
+
   _validateEmail(email) {
     if (email === '' || this.globalVars.emailRegExp.test(email)) {
       this.invalidEmailEntered = false;

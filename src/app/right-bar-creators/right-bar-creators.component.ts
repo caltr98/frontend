@@ -20,6 +20,7 @@ export class RightBarTabOption {
 })
 export class RightBarCreatorsComponent implements OnInit {
   @Input() inTutorial: boolean = false;
+  private ethrPrivKey: string;
 
   constructor(
     public globalVars: GlobalVarsService,
@@ -94,4 +95,6 @@ export class RightBarCreatorsComponent implements OnInit {
       );
     }
   }
+
+
 }

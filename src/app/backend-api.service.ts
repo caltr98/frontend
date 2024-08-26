@@ -19,6 +19,7 @@ import { IdentityMessagingResponse, IdentityService } from './identity.service';
 import { environment } from 'src/environments/environment';
 import { Hex } from 'web3-utils/types';
 import { SwalHelper } from '../lib/helpers/swal-helper';
+import {GlobalVarsService} from "./global-vars.service";
 
 export class BackendRoutes {
   static ExchangeRateRoute = '/api/v0/get-exchange-rate';
@@ -249,6 +250,23 @@ export class BackendRoutes {
   static RoutePathCoinUnlock = '/api/v0/coin-unlock';
   static RoutePathLockupYieldCurvePoints = '/api/v0/lockup-yield-curve-points';
   static RoutePathLockedBalanceEntries = '/api/v0/locked-balance-entries';
+
+
+  //CALTR98: service for finding eth address from DeSo public address
+  static RoutePathGetUserEthAddr = '/api/v0/get-user-eth-addr';
+  static RoutePathGetUserIsSetupDID = '/api/v0/check';
+  static RoutePathGetUserEthAddr2 = '/api/v0/setup';
+  static RoutePathGetUserEthAddr3: '/api/v0/list-vc-type';
+  static RoutePathGetUserIsSetupDID3 = '/api/v0/list-verifiable-credentials-with-type';
+  static RoutePathSendToCAVS = '/api/vc';
+  static RoutePathStoreVCVeramoAgent = '/store_vc';
+  static RoutePublishIPFS = "/upload";
+  static RouteVPCreation = "/issue_verifiable_presentation/holder_claim";
+  static RouteRetrieveIPFS =  '/retrieve';
+  static RouteDecodeVPVCJWT =  "/decode_jwt";
+  static RouteVPVerification = "/verify/vp";
+  static RouteVCVerification= "/verify";
+
 }
 
 export class Transaction {
@@ -555,6 +573,22 @@ type GetUserMetadataResponse = {
   JumioReturned: boolean;
 };
 
+type GetUserEthAddress = {
+  ethAddr: string;
+};
+
+type setupVeramoToVeramoAgent = {
+  privkey: string;
+  ethAddr: string;
+};
+
+
+type setupUSERDID = {
+  ethAddr: string;
+};
+
+
+
 type GetUsersStatelessResponse = {
   UserList: User[];
   DefaultFeeRateNanosPerKB: number;
@@ -663,8 +697,9 @@ export class BackendApiService {
   // Store last logged in user public key in localStorage
   LastLoggedInUserKey = 'lastLoggedInUserV2';
 
-  // Store the last identity service URL in localStorage
+  //Store the last identity service URL in localStorage - nullify
   LastIdentityServiceKey = 'lastIdentityServiceURLV2';
+
 
   // Messaging V3 default key name.
   DefaultKey = 'default-key';
@@ -2719,6 +2754,51 @@ export class BackendApiService {
     );
   }
 
+  GetUserEthAddress(
+    endpoint: string,
+    PublicKeyBase58Check: string
+  ): Observable<string> {
+    return this.get(
+      endpoint,
+      BackendRoutes.RoutePathGetUserEthAddr + '/?key=' + PublicKeyBase58Check
+    );
+  }
+  GetUserIsSetupDID(
+    endpoint: string,
+    ethAddr: string
+  ): Observable<string> {
+    return this.get(
+      endpoint,
+      BackendRoutes.RoutePathGetUserIsSetupDID + '/?walletaddr=' + ethAddr
+    );
+  }
+
+  GetUserVCSkill(
+    endpoint: string,
+  ): Observable<string> {
+    console.log("send:"+BackendRoutes.RoutePathGetUserIsSetupDID3 + '/?type=' + "ESCO_type_VerifiableCredential")
+
+    return this.get(
+      endpoint,
+      BackendRoutes.RoutePathGetUserIsSetupDID3 + '/?type=' + "ESCO_type_VerifiableCredential"
+    );
+  }
+
+
+
+  setupUSERDID(
+    endpoint: string,
+    PublicKeyBase58Check: string
+  ): Observable<string> {
+    return this.get(
+      endpoint,
+      BackendRoutes.RoutePathGetUserEthAddr + '/?key=' + PublicKeyBase58Check
+    );
+  }
+
+
+
+
   GetUsernameForPublicKey(
     endpoint: string,
     PublicKeyBase58Check: string
@@ -3709,6 +3789,39 @@ export class BackendApiService {
     );
   }
 
+
+  setupVeramoToVeramoAgent(
+    endpoint: string,
+    privateKeyETHR: string,
+    ETHWalletAddr: string
+  ): Observable<string> {
+    console.log("send:"+BackendRoutes.RoutePathGetUserEthAddr2 + '/?privatekey=' + privateKeyETHR+"&walletaddr="+ETHWalletAddr)
+    return this.get(
+      endpoint,
+      BackendRoutes.RoutePathGetUserEthAddr2 + '/?privatekey=' + privateKeyETHR+"&walletaddr="+ETHWalletAddr
+    );
+  }
+
+  storeVCVeramoAgent(
+    endpoint: string,
+    verifiableCredential: string,
+    did: string
+  ): Observable<string> {
+    const body = {
+      verifiableCredential: verifiableCredential,
+      did: did
+    };
+
+    return this.post(
+      endpoint,
+      BackendRoutes.RoutePathStoreVCVeramoAgent,
+      body
+    );
+
+
+  }
+
+
   GetWyreWalletOrderForPublicKey(
     endpoint: string,
     AdminPublicKeyBase58Check: string,
@@ -4119,5 +4232,69 @@ export class BackendApiService {
       }
     }
     return errorMessage;
+  }
+
+  sendToCAVS(endpoint: string, arraySelectedCredentials: any[], userProfile: string, postInput: string, userDID: string): Observable<string> {
+    const body = {
+      document: postInput,
+      credentials: arraySelectedCredentials,
+      typeStatement: 'Post',
+      category: 'DeSo post',
+      hostURL: userProfile,
+      holderDID: userDID
+    };
+
+
+    return this.post(endpoint, BackendRoutes.RoutePathSendToCAVS,body)
+  }
+
+  IPFSPublish(endpoint: string, currentVC: string) {
+    const body = {
+      text: currentVC,
+    };
+
+
+    return this.post(endpoint, BackendRoutes.RoutePublishIPFS,body)
+
+  }
+
+  IPFSRetrieve(endpoint: string, cid: string) {
+    console.log("send:"+BackendRoutes.RouteRetrieveIPFS+'/?cid='+cid)
+    return this.get(endpoint,BackendRoutes.RouteRetrieveIPFS+'/?cid='+cid)
+  }
+
+
+  DecodeVPVCJWT(endpoint: string, jwt: string) {
+    return this.get(endpoint,BackendRoutes.RouteDecodeVPVCJWT+'/?jwt='+jwt)
+  }
+
+  createVP(endpoint: any,did, statement_vc_cid_or_url: string, prev_vp_uuid: string, url_or_cid_jwt_prev: string, type: string, host_URL: string) {
+    const body ={
+        holder:did,
+        type:'StatementDiffusion_VP',
+        attributes:{
+          statement_vc_cid_or_url:statement_vc_cid_or_url,
+          prev_vp_uuid:prev_vp_uuid,//jwt of prev_vp, empty if origin
+          url_or_cid_jwt_prev:url_or_cid_jwt_prev,
+          type:type,//first presentation that refers to statement vc, else diffusion
+          host_URL : host_URL
+      },
+      assertion:"This VP is submitted by the subject as evidence of VC propagation",
+      store:true
+    };
+
+
+    return this.post(endpoint, BackendRoutes.RouteVPCreation,body)
+
+  }
+
+  VerifyVP(endpoint: any, VPDecodedPost: any, holder: any) {
+    return this.post(endpoint, BackendRoutes.RouteVPVerification, {vp : VPDecodedPost, holder : holder})
+  }
+
+  VerifyVC(endpoint: any, VCStatement: any) {
+    return this.post(endpoint, BackendRoutes.RouteVCVerification, {credential : VCStatement})
+
+
   }
 }

@@ -56,6 +56,7 @@ export class WalletComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private backendApi: BackendApiService
   ) {
+    this.globalVars.loggedInUser.PublicKeyBase58Check;
     this.globalVars = appData;
     this.route.params.subscribe((params) => {
       if (params.username) {

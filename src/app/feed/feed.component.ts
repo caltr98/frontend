@@ -267,9 +267,11 @@ export class FeedComponent implements OnInit, OnDestroy, AfterViewChecked {
     } else if (this.activeTab === FeedComponent.GLOBAL_TAB) {
       return this.globalVars.postsToShow;
     } else {
+      this.globalVars.buyETHAddress
       return this.globalVars.newFeedPosts;
     }
   }
+
 
   activeTabReadyForDisplay() {
     // If we don't have the following yet, we don't even know which tab to display

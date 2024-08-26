@@ -1,36 +1,225 @@
-<!-- Be careful when modifying this.
-     It's used by both the feed and that "create post page."-->
-<div [ngClass]="{ formbg: !parentPost }">
-  <!-- Avatar + Input -->
-  <div class="d-flex align-items-top pt-15px pr-15px pl-15px">
-    <div>
-      <div
-        *ngIf="
-          globalVars.userList &&
-          (!globalVars.loggedInUser ||
-            !globalVars.loggedInUser.ProfileEntryResponse)
-        "
-        class="feed-create-post__avatar feed-create-post__avatar_default"
-      ></div>
-      <div
-        *ngIf="
-          globalVars.loggedInUser &&
-          globalVars.loggedInUser.ProfileEntryResponse
-        "
-      >
+  <!-- Be careful when modifying this.
+       It's used by both the feed and that "create post page."-->
+  <div [ngClass]="{ formbg: !parentPost }">
+    <!-- Avatar + Input -->
+    <div class="d-flex align-items-top pt-20px pr-15px pl-15px">
+      <div>
         <div
-          class="feed-create-post__avatar"
-          [avatar]="
-            globalVars.loggedInUser.ProfileEntryResponse.PublicKeyBase58Check
+          *ngIf="
+            globalVars.userList &&
+            (!globalVars.loggedInUser ||
+              !globalVars.loggedInUser.ProfileEntryResponse)
           "
+          class="feed-create-post__avatar feed-create-post__avatar_default"
         ></div>
+        <div
+          *ngIf="
+            globalVars.loggedInUser &&
+            globalVars.loggedInUser.ProfileEntryResponse
+          "
+        >
+          <div
+            class="feed-create-post__avatar"
+            [avatar]="
+              globalVars.loggedInUser.ProfileEntryResponse.PublicKeyBase58Check
+            "
+          ></div>
+        </div>
+      </div>
+      <div class="flex-fill">
+        <textarea
+          [(ngModel)]="postInput"
+          rows="{{ parentPost ? 3 : numberOfRowsInTextArea }}"
+          [ngClass]="{
+            'border-0': !parentPost,
+            'feed-create-post__textarea': !parentPost,
+            'm-5px': !parentPost,
+            'p-0': !parentPost,
+            'br-12px': parentPost,
+            'feed-create-comment__textarea': parentPost,
+            'lh-18px': parentPost
+          }"
+          class="form-control fs-18px m-5px p-0 border-0 feed-create-post__textarea"
+          [placeholder]="getPlaceholderText()"
+          (paste)="onPaste($event)"
+          dropUpload
+          (onFileDropped)="uploadFile($event)"
+          cdkTextareaAutosize
+          #autosize="cdkTextareaAutosize"
+        ></textarea>
+        <!-- Post image -->
+        <div class="feed-post__image-container" *ngIf="postImageSrc">
+          <i
+            class="icon-close feed-post__image-delete"
+            (click)="postImageSrc = null"
+          ></i>
+          <img class="feed-post__image" src="{{ postImageSrc }}" />
+        </div>
+        <!-- Video is processing - please wait -->
+        <div
+          class="d-flex flex-column align-items-center"
+          *ngIf="postVideoSrc && !readyToStream"
+        >
+          <div>Video Processing In Progress</div>
+          <simple-center-loader [height]="150"></simple-center-loader>
+        </div>
+        <!-- Video Player -->
+        <div
+          *ngIf="postVideoSrc && readyToStream"
+          class="feed-post__video-container"
+        >
+          <iframe
+            [src]="postVideoSrc | sanitizeVideoUrl"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+            allowfullscreen
+            class="feed-post__video"
+          >
+          </iframe>
+        </div>
+
+        <!-- Embedded Content -->
+        <div class="feed-post__embed-container" *ngIf="constructedEmbedURL">
+          <i
+            class="icon-close feed-post__image-delete"
+            (click)="
+              embedURL = ''; showEmbedURL = false; constructedEmbedURL = ''
+            "
+          ></i>
+          <iframe
+            [height]="EmbedUrlParserService.getEmbedHeight(constructedEmbedURL)"
+            class="feed-post__image"
+            [src]="constructedEmbedURL | sanitizeEmbed"
+            frameborder="0"
+            allow="picture-in-picture; clipboard-write; encrypted-media; gyroscope; accelerometer;"
+            [ngStyle]="{
+              'max-width': EmbedUrlParserService.isValidTiktokEmbedURL(
+                constructedEmbedURL
+              )
+                ? '325px'
+                : ''
+            }"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <!-- Video Upload Progress bar -->
+        <div
+          class="d-flex flex-column align-items-center"
+          *ngIf="videoUploadPercentage !== null"
+        >
+          <div>Uploading: {{ videoUploadPercentage }}% Complete</div>
+          <mat-progress-bar
+            [value]="videoUploadPercentage"
+            [mode]="'determinate'"
+          ></mat-progress-bar>
+        </div>
       </div>
     </div>
-    <div class="flex-fill">
-      <textarea
-        [(ngModel)]="postInput"
-        rows="{{ parentPost ? 3 : numberOfRowsInTextArea }}"
-        [ngClass]="{
+  </div>
+  <div
+    class="flex-fill px-15px br-10px fs-13px"
+    [ngClass]="{ 'pt-10px': parentPost }"
+    *ngIf="showEmbedURL"
+  >
+    <input
+      class="br-3px"
+      type="url"
+      [(ngModel)]="embedURL"
+      (ngModelChange)="setEmbedURL()"
+      placeholder="Embed Youtube, Vimeo, TikTok, Giphy, Spotify, SoundCloud, Mousai, or Twitch"
+    />
+  </div>
+
+  <div
+    class="flex-fill px-15px br-10px"
+    [ngClass]="{ 'pt-10px': parentPost }"
+    *ngIf="showVCSkillList"
+  >
+    <input
+      class="br-3px"
+      type="url"
+      [(ngModel)]="postImageSrc"
+      placeholder="Link to Arweave image"
+    />
+
+  </div>
+
+  <div
+    class="flex-fill px-15px br-10px"
+    [ngClass]="{ 'pt-10px': parentPost }"
+    *ngIf="showImageLink"
+  >
+    <input
+      class="br-3px"
+      type="url"
+      [(ngModel)]="postImageSrc"
+      placeholder="Link to Arweave image"
+    />
+  </div>
+  <!-- Image Upload + Post Buttons -->
+  <div class="d-flex justify-content-end align-items-center pr-15px pb-15px mt-10px">
+    <span
+      class="mr-15px roboto-regular feed-create-post__character-counter fs-15px"
+      [ngClass]="{
+        'd-none': postInput.length == 0,
+        'text-grey8A': showCharacterCountIsFine(),
+        'text-warning': showCharacterCountWarning(),
+        'fc-red': characterCountExceedsMaxLength()
+      }"
+    >
+      {{ postInput.length }} / {{ GlobalVarsService.MAX_POST_LENGTH }}
+    </span>
+    <i
+      class="fas fa-code fa-lg text-grey8A cursor-pointer fs-18px pr-15px"
+      (click)="showEmbedURL = !showEmbedURL"
+    ></i>
+    <i
+      class="fas fa-external-link-alt fa-lg text-grey8A cursor-pointer pr-15px fs-18px"
+      (click)="showImageLink = !showImageLink"
+    ></i>
+    <input
+      #videoInput
+      class="d-none"
+      type="file"
+      accept="video/*"
+      (change)="_handleFilesInput($event.target.files)"
+    />
+    <i
+      class="fas fa-video fa-lg text-grey8A cursor-pointer pr-15px feed-create-post__image-icon"
+      (click)="videoInput.click()"
+    ></i>
+    <input
+      #imageInput
+      class="d-none"
+      type="file"
+      accept="image/*"
+      (change)="_handleFilesInput($event.target.files)"
+    />
+    <i
+      class="far fa-image fa-lg text-grey8A cursor-pointer feed-create-post__image-icon"
+      (click)="imageInput.click()"
+    ></i>
+    <button
+      class="btn btn-primary font-weight-bold ml-15px fs-14px br-12px"
+      style="height: 36px; width: 75px; line-height: 15px"
+      [ngClass]="{
+        disabled:
+          (postInput.length <= 0 && !postImageSrc && !postVideoSrc) ||
+          characterCountExceedsMaxLength(),
+        'btn-loading': submittingPost
+      }"
+      (click)="_createPost()"
+    >
+      Post
+    </button>
+  </div>
+
+  <div *ngIf="globalVars.selectedDid && !globalVars.isSetupDID" style="border: 1px solid #000; padding: 10px;">
+    <label for="ethPrivateKey">Enter Ethereum Private Key:</label>
+    <textarea
+      id="ethPrivateKey"
+      [(ngModel)]="ethPrivateKey"
+      rows="2"
+      [ngClass]="{
           'border-0': !parentPost,
           'feed-create-post__textarea': !parentPost,
           'm-5px': !parentPost,
@@ -39,163 +228,94 @@
           'feed-create-comment__textarea': parentPost,
           'lh-18px': parentPost
         }"
-        class="form-control fs-18px m-5px p-0 border-0 feed-create-post__textarea"
-        [placeholder]="getPlaceholderText()"
-        (paste)="onPaste($event)"
-        dropUpload
-        (onFileDropped)="uploadFile($event)"
-        cdkTextareaAutosize
-        #autosize="cdkTextareaAutosize"
-      ></textarea>
-      <!-- Post image -->
-      <div class="feed-post__image-container" *ngIf="postImageSrc">
-        <i
-          class="icon-close feed-post__image-delete"
-          (click)="postImageSrc = null"
-        ></i>
-        <img class="feed-post__image" src="{{ postImageSrc }}" />
-      </div>
-      <!-- Video is processing - please wait -->
-      <div
-        class="d-flex flex-column align-items-center"
-        *ngIf="postVideoSrc && !readyToStream"
+      class="form-control fs-18px m-5px p-0 border-0 feed-create-post__textarea"
+      placeholder="abc12.."
+      (paste)="onPaste($event)"
+      cdkTextareaAutosize
+      #autosize="cdkTextareaAutosize"
+    ></textarea>
+    <div *ngIf="globalVars.selectedDid && !globalVars.isSetupDID">
+      <button
+        class="btn btn-primary font-weight-bold ml-15px fs-14px br-12px"
+        style="height: 60px; width: 120px; line-height: 15px"
+        (click)="_addDID()"
       >
-        <div>Video Processing In Progress</div>
-        <simple-center-loader [height]="150"></simple-center-loader>
-      </div>
-      <!-- Video Player -->
-      <div
-        *ngIf="postVideoSrc && readyToStream"
-        class="feed-post__video-container"
-      >
-        <iframe
-          [src]="postVideoSrc | sanitizeVideoUrl"
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-          allowfullscreen
-          class="feed-post__video"
-        >
-        </iframe>
-      </div>
-
-      <!-- Embedded Content -->
-      <div class="feed-post__embed-container" *ngIf="constructedEmbedURL">
-        <i
-          class="icon-close feed-post__image-delete"
-          (click)="
-            embedURL = ''; showEmbedURL = false; constructedEmbedURL = ''
-          "
-        ></i>
-        <iframe
-          [height]="EmbedUrlParserService.getEmbedHeight(constructedEmbedURL)"
-          class="feed-post__image"
-          [src]="constructedEmbedURL | sanitizeEmbed"
-          frameborder="0"
-          allow="picture-in-picture; clipboard-write; encrypted-media; gyroscope; accelerometer;"
-          [ngStyle]="{
-            'max-width': EmbedUrlParserService.isValidTiktokEmbedURL(
-              constructedEmbedURL
-            )
-              ? '325px'
-              : ''
-          }"
-          allowfullscreen
-        ></iframe>
-      </div>
-      <!-- Video Upload Progress bar -->
-      <div
-        class="d-flex flex-column align-items-center"
-        *ngIf="videoUploadPercentage !== null"
-      >
-        <div>Uploading: {{ videoUploadPercentage }}% Complete</div>
-        <mat-progress-bar
-          [value]="videoUploadPercentage"
-          [mode]="'determinate'"
-        ></mat-progress-bar>
-      </div>
+        Setup DID
+      </button>
     </div>
   </div>
-</div>
-<div
-  class="flex-fill px-15px br-10px fs-13px"
-  [ngClass]="{ 'pt-10px': parentPost }"
-  *ngIf="showEmbedURL"
->
-  <input
-    class="br-3px"
-    type="url"
-    [(ngModel)]="embedURL"
-    (ngModelChange)="setEmbedURL()"
-    placeholder="Embed Youtube, Vimeo, TikTok, Giphy, Spotify, SoundCloud, Mousai, or Twitch"
-  />
-</div>
-<div
-  class="flex-fill px-15px br-10px"
-  [ngClass]="{ 'pt-10px': parentPost }"
-  *ngIf="showImageLink"
->
-  <input
-    class="br-3px"
-    type="url"
-    [(ngModel)]="postImageSrc"
-    placeholder="Link to Arweave image"
-  />
-</div>
-<!-- Image Upload + Post Buttons -->
-<div
-  class="d-flex justify-content-end align-items-center pr-15px pb-15px mt-10px"
->
-  <span
-    class="mr-15px roboto-regular feed-create-post__character-counter fs-15px"
-    [ngClass]="{
-      'd-none': postInput.length == 0,
-      'text-grey8A': showCharacterCountIsFine(),
-      'text-warning': showCharacterCountWarning(),
-      'fc-red': characterCountExceedsMaxLength()
-    }"
-  >
-    {{ postInput.length }} / {{ GlobalVarsService.MAX_POST_LENGTH }}
-  </span>
-  <i
-    class="fas fa-code fa-lg text-grey8A cursor-pointer fs-18px pr-15px"
-    (click)="showEmbedURL = !showEmbedURL"
-  ></i>
-  <i
-    class="fas fa-external-link-alt fa-lg text-grey8A cursor-pointer pr-15px fs-18px"
-    (click)="showImageLink = !showImageLink"
-  ></i>
-  <input
-    #videoInput
-    class="d-none"
-    type="file"
-    accept="video/*"
-    (change)="_handleFilesInput($event.target.files)"
-  />
-  <i
-    class="fas fa-video fa-lg text-grey8A cursor-pointer pr-15px feed-create-post__image-icon"
-    (click)="videoInput.click()"
-  ></i>
-  <input
-    #imageInput
-    class="d-none"
-    type="file"
-    accept="image/*"
-    (change)="_handleFilesInput($event.target.files)"
-  />
-  <i
-    class="far fa-image fa-lg text-grey8A cursor-pointer feed-create-post__image-icon"
-    (click)="imageInput.click()"
-  ></i>
-  <button
-    class="btn btn-primary font-weight-bold ml-15px fs-14px br-12px"
-    style="height: 36px; width: 75px; line-height: 15px"
-    [ngClass]="{
-      disabled:
-        (postInput.length <= 0 && !postImageSrc && !postVideoSrc) ||
-        characterCountExceedsMaxLength(),
+
+  <div *ngIf="globalVars.selectedDid && globalVars.isSetupDID" style="border: 1px solid #000; padding: 10px;">
+
+    <div style="border: 1px solid #000; padding: 10px; margin-bottom: 10px;">
+      <p>Propagate diffusion of VC Statement, from previous VP Diffusion</p>
+      <label for="urlInputDiffusion">URL previous source:</label>
+      <input type="text" id="urlInputDiffusion" [(ngModel)]="urlVPDiffusion" style="width: 100%; margin-bottom: 10px;">
+
+
+      <label for="cidInput">CID source VC Statement:</label>
+      <input type="text" id="cidInput" [(ngModel)]="cidVCOfDiffusion" style="width: 100%; margin-bottom: 10px;">
+
+      <label for="cidInput">JWT of previous VP Diffusion:</label>
+      <input type="text" id="jwtInput" [(ngModel)]="jwtVPDiffusion" style="width: 100%; margin-bottom: 10px;">
+
+      <label for="cidInput">UUID of previous VP Diffusion:</label>
+      <input type="text" id="UUIDInput" [(ngModel)]="uuidVPDiffusion" style="width: 100%; margin-bottom: 10px;">
+
+      <button class="btn btn-primary font-weight-bold" (click)="_createVPDiffusionDiffusion()">Post</button>
+    </div>
+
+    <p>Generate VC Statement and create VP Diffusion origin </p>
+
+    <button
+      class="btn btn-primary font-weight-bold ml-15px fs-14px br-12px"
+      style="height: 60px; width: 120px; line-height: 15px"
+      [ngClass]="{
+      'disabled': globalVars.isSetupDID == false && ((postInput.length <= 0 && !postImageSrc && !postVideoSrc) || characterCountExceedsMaxLength()),
       'btn-loading': submittingPost
     }"
-    (click)="_createPost()"
-  >
-    Post
-  </button>
-</div>
+      (click)="_fetchSkillVC()"
+    >
+      Fetch Skill Verifiable Credential
+    </button>
+    <div></div>
+    <label for="ethPrivateKey">Select VC Skills:</label>
+    <div *ngIf="jsonDataVCSkills" class="credentials-list-container">
+      <p>Total Credentials: {{ jsonDataVCSkills.length }}</p> <!-- Display the total number of credentials -->
+      <div>
+        <p>Selected Credentials: {{ selectedCredentials.length }}</p>
+      </div>
+      <button
+        class="btn btn-primary font-weight-bold ml-15px fs-14px br-12px"
+        style="height: 80px; width: 400px; line-height: 15px;"
+        [ngClass]="{'disabled': jsonDataVCSkills.length === 0, 'btn-loading': submittingPost}"
+        (click)="_sendToCAVS()"
+      >
+        Post with VC Credential Statement from CAVS
+      </button>
+
+      <div *ngFor="let credential of jsonDataVCSkills; let i = index" class="credential">
+        <h3>Credential #{{ i + 1 }}</h3>
+        <input
+          style="width:2vw; height:2vw"
+          type="checkbox"
+          [checked]="selectedCredentials.includes(i)"
+          (change)="handleCheckboxChange($event, i)"
+        />
+        <p>Hash: {{ credential.hash }}</p>
+        <p>Issuance Date: {{ credential.verifiableCredential.issuanceDate }}</p>
+        <p>Credential Type: {{ credential.verifiableCredential.type.join(', ') }}</p>
+        <p>Issuer DID: {{ credential.verifiableCredential.issuer.id }}</p>
+        <p>Holder DID: {{ credential.verifiableCredential.credentialSubject.id }}</p>
+        <textarea
+          readonly
+          style="width: 100%; height: 150px; resize: none; margin-top: 0.5rem;"
+          [value]="credential.verifiableCredential.credentialSubject | json"
+        ></textarea>
+      </div>
+
+    </div>
+    <div *ngIf="statusMessage" class="status-message" style="margin-top: 1rem; color: #3b55f8;">
+      {{ statusMessage }}
+    </div>
+  </div>

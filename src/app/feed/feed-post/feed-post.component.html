@@ -745,4 +745,40 @@
       </div>
     </div>
   </div>
+  <h3 *ngIf="VPDecodedPost">Verifiable Presentiation Diffusion</h3>
+  <p *ngIf="resultVPVerificaton" [ngStyle]="{ color: resultVPVerificaton === true ? 'green' : 'red' }">
+    Verified to be {{ resultVPVerificaton }}
+  </p>
+  <div *ngIf="VPDecodedPost" class="json-display-container" style="background-color: #f5f5f5; border: 1px solid #ccc; border-radius: 5px; padding: 10px; overflow: auto; max-height: 400px;">
+    <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ VPDecodedPost | json }}</pre>
+  </div>
+  <button class="btn btn-primary font-weight-bold br-8px fs-13px" *ngIf="VPDecodedPost" (click)="_traceback()">Traceback</button>
+  <div>-</div>
+  <button class="btn btn-primary font-weight-bold br-8px fs-13px" *ngIf="VPDecodedPost" (click)="_verifyVP()">Verify</button>
+  <div>-</div>
+  <button class="btn btn-primary font-weight-bold br-8px fs-13px" *ngIf="VPDecodedPost" (click)="_getAndVerifyVCStatement()">Get and Verify VerifiableCredential Statement</button>
+
+  <h3 *ngIf="VCStatement">Verifiable Credential Statement</h3>
+  <p *ngIf="resultVCVerificaton" [ngStyle]="{ color: resultVCVerificaton === true ? 'green' : 'red' }">
+    Verified to be {{ resultVCVerificaton }}
+  </p>
+  <div *ngIf="VCStatement" class="json-display-container" style="background-color: #f5f5f5; border: 1px solid #ccc; border-radius: 5px; padding: 10px; overflow: auto; max-height: 400px;">
+    <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ VCStatement | json }}</pre>
+  </div>
+
+  <div *ngIf="VPDiffs && VPDiffs.length > 0" style="border: 2px solid darkblue; padding: 10px; margin-bottom: 10px;">
+    <h3>Traceback</h3>
+    <div style="border-top: 2px solid darkblue; margin-top: 10px; padding-top: 10px;">
+      <div *ngFor="let VPDiff of VPDiffs; let i = index" style="border-bottom: 1px solid darkblue; padding-bottom: 10px; margin-bottom: 10px;">
+        <h3 *ngIf="VPDiff">Verifiable Credential Diffusion - {{ i + 1 }}</h3>
+        <p *ngIf="verificationResults[i]" [ngStyle]="{ color: verificationResults[i] === true ? 'green' : 'red' }">
+          Verified to be {{ verificationResults[i] }}
+        </p>
+        <div *ngIf="VPDiff" class="json-display-container" style="background-color: #f5f5f5; border: 1px solid #ccc; border-radius: 5px; padding: 10px; overflow: auto; max-height: 400px;">
+          <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ VPDiff | json }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

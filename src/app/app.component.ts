@@ -100,6 +100,65 @@ export class AppComponent implements OnInit {
     const userCopy = JSON.parse(JSON.stringify(user));
   }
 
+  //caltr98: addition to add the code which will get the ethereum public key associated with the current account
+  _getUserEthAddr(loggedInUserPublicKey:string): string {
+    console.log("calling");
+    console.log(loggedInUserPublicKey);
+
+    let ethAddr = '';
+    // Synchronous block, but will wait for subscription to complete
+    this.backendApi
+      .GetUserEthAddress(
+        this.globalVars.SSIIntegrationHelper,
+        loggedInUserPublicKey
+      )
+      .subscribe(
+        (res: any) => {
+          this.globalVars.userETHRAddr = res.ethereumAddress; // Update ethAddr when response arrives
+          this.globalVars.selectedDid = "did:ethr:"+res.ethereumAddress; // Update did when response arrives
+
+          console.log("result arrived")
+          console.log(ethAddr)
+          this._checkUserDIDSetup();
+        },
+        (err) => {
+          console.error('Error fetching Ethereum address:', err);
+        }
+      );
+
+    return ethAddr; // Return the initial value of ethAddr (may be empty)
+  }
+
+  //caltr98: addition to add the code which will get the ethereum public key associated with the current account
+  _checkUserDIDSetup(): void {
+    console.log("calling");
+    console.log(this.globalVars.userETHRAddr);
+
+    // Synchronous block, but will wait for subscription to complete
+    this.backendApi
+      .GetUserIsSetupDID(
+        this.globalVars.addressVeramoAgent, this.globalVars.userETHRAddr
+      )
+      .subscribe(
+        (res: any) => {
+          console.log("result is isSetup" + res )
+          if(res.did) {
+            this.globalVars.isSetupDID = true
+            console.log("did is setup")
+          }
+          else {
+            this.globalVars.isSetupDID = false
+            console.log("did is NOT setup")
+          }
+        },
+        (err) => {
+          console.error('Error checking DID:', err);
+        }
+      );
+  }
+
+
+
   _updateTopLevelData(): Subscription {
     if (this.callingUpdateTopLevelData) {
       return new Subscription();
@@ -157,7 +216,8 @@ export class AppComponent implements OnInit {
             return false;
           }
         });
-
+        //caltr98: add the detail of ethereum address
+        this._getUserEthAddr(loggedInUserPublicKey)
         // If we got user metadata from some external global state, let's overwrite certain attributes of the logged in user.
         if (userMetadata) {
           loggedInUser.HasPhoneNumber = userMetadata.HasPhoneNumber;
@@ -285,6 +345,7 @@ export class AppComponent implements OnInit {
           .map((k) => `${k.txnType}: ${this.globalVars.nanosToUSD(k.fees, 4)}`)
           .join('\n');
       });
+
   }
 
   _updateEverything = (

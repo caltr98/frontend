@@ -62,6 +62,9 @@ export class GlobalVarsService {
   static DEFAULT_NANOS_PER_USD_EXCHANGE_RATE = 1e9;
   static NANOS_PER_UNIT = 1e9;
   static WEI_PER_ETH = 1e18;
+  addressCAVS: any = "http://localhost:4200" ;
+  addressVeramoAgent: any = "http://localhost:3001";
+  addressIPFSAgent: any = "http://localhost:4201";
 
   constructor(
     private backendApi: BackendApiService,
@@ -70,7 +73,7 @@ export class GlobalVarsService {
     private httpClient: HttpClient
   ) {}
 
-  static MAX_POST_LENGTH = 560;
+  static MAX_POST_LENGTH = 560 ; //THIS LIMIT SEEMS TO BE FRONT END IMPOSED (CALTR98)
 
   static FOUNDER_REWARD_BASIS_POINTS_WARNING_THRESHOLD = 50 * 100;
 
@@ -169,6 +172,12 @@ export class GlobalVarsService {
   nodeInfo: any;
   // The API node we connect to
   localNode: string = null;
+
+  //CALTR98: addition, a service that helps us integrate with
+  //SSI Fake News mitigation solution (CAVS)
+  // it is a bridge and an helper
+  SSIIntegrationHelper: string = null;
+
   // Whether or not the node is running on the testnet or mainnet.
   isTestnet = false;
 
@@ -234,7 +243,10 @@ export class GlobalVarsService {
   transactionFeeInfo: string;
 
   buyETHAddress: string = '';
-
+  //addition
+  selectedDid: string = '';
+  userETHRAddr: string = '';
+  isSetupDID:boolean = false;
   nodes: { [id: number]: DeSoNode };
 
   SetupMessages() {
@@ -388,6 +400,7 @@ export class GlobalVarsService {
     if (user.BalanceNanos) {
       this.getLoggedInUserDefaultKey();
     }
+
 
     this._notifyLoggedInUserObservers(user, isSameUserAsBefore);
     this.navigateToCurrentStepInTutorial(user);
@@ -1087,12 +1100,20 @@ export class GlobalVarsService {
       this.backendApi.LastLocalNodeKey
     );
 
+    if(!this.SSIIntegrationHelper){
+      //CALTR98:hardcoded endpoint (provisional (?))
+      this.SSIIntegrationHelper = "http://localhost:17005"
+    }
     if (!this.localNode) {
       const hostname = (window as any).location.hostname;
       if (environment.production) {
-        this.localNode = hostname;
+        //no local node, use the default main one
+        //this.localNode = hostname;
+        this.localNode = `https://node.deso.org`;
       } else {
-        this.localNode = `${hostname}:17001`;
+        //no local node, use the default main one
+        //this.localNode = `${hostname}:17001`;
+        this.localNode = `https://node.deso.org`;
       }
 
       this.backendApi.SetStorage(

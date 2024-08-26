@@ -19,7 +19,7 @@ vscode:
 
 # Ports to expose on workspace startup
 ports:
-  - port: 4200
+  - port: 4220
     onOpen: open-browser
 
 # Github integration

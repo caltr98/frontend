@@ -64,7 +64,10 @@
         </span>
       </div>
     </div>
+    <p style="color: #0000ff;">User ETH ADDRESS: {{ globalVars.userETHRAddr }}</p>
+    <p style="color: #0000ff;">User DID: {{ globalVars.selectedDid }}</p>
   </div>
+
 
   <div
     *ngIf="
@@ -80,7 +83,7 @@
         class="font-weight-bold"
         (click)="globalVars.resendVerifyEmail()"
         *ngIf="!globalVars.resentVerifyEmail"
-        >Resend Verification Email</a
+      >Resend Verification Email</a
       >
       <p *ngIf="globalVars.resentVerifyEmail">Sent!</p>
     </div>
@@ -88,7 +91,7 @@
       *ngIf="!globalVars.loggedInUser.HasEmail"
       [routerLink]="'/' + globalVars.RouteNames.SETTINGS"
       class="font-weight-bold"
-      >Update your email</a
+    >Update your email</a
     >
   </div>
 
@@ -100,7 +103,7 @@
   <!-- Title -->
   <div
     class="fs-15px text-grey5 font-weight-bold mb-10px d-flex flex-column"
-    [ngClass]="{ 'pb-10px': !activeRightTabOption.poweredBy }"
+    [ngClass]="{ 'pb-10px': !activeRightTabOption?.poweredBy }"
     *ngIf="!inTutorial"
   >
     <div>
@@ -117,11 +120,11 @@
           [value]="option.key"
           class="fs-15px text-grey5 font-weight-bold"
         >
-          {{ option.key }}
+          {{ option.value.name }}
         </option>
       </select>
     </div>
-    <div class="pt-5px" *ngIf="activeRightTabOption.poweredBy">
+    <div class="pt-5px" *ngIf="activeRightTabOption?.poweredBy">
       <a
         class="link--unstyled fs-12px text-grey7"
         [href]="activeRightTabOption.poweredBy.link"

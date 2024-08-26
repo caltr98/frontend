@@ -37,10 +37,114 @@ import { TransferNftAcceptModalComponent } from '../../transfer-nft-accept-modal
   styleUrls: ['./feed-post.component.sass'],
 })
 export class FeedPostComponent implements OnInit {
+  isVerifiable:boolean = false;
+  VPDecodedPost: any;
+  VCStatement: any;
+
+  resultVPVerificaton: boolean;
+  resultVCVerificaton: any;
+  verificationResults: JSON[] = [];
+  VPDiffs: JSON[] = [];
   @Input()
   get post(): PostEntryResponse {
     return this._post;
   }
+
+  // Define an auxiliary function that checks if either VPDiffusionDiffusion or VPDiffusionOrigin are present in PostContent.Body
+// If found, return the value after CID:, otherwise return an empty string
+  getVPDiffusionValue(postContent: PostEntryResponse): string {
+    // Check if PostContent.Body contains either structure and return the value after CID:
+    if (postContent.Body.includes("-VPDiffusionDiffusion-CID:")) {
+      return this.getValueAfterCID(postContent.Body, "-VPDiffusionDiffusion-CID:");
+    } else if (postContent.Body.includes("-VPDiffusionOrigin-CID:")) {
+      return this.getValueAfterCID(postContent.Body, "-VPDiffusionOrigin-CID:");
+    } else {
+      return ''; // Return empty string if neither structure is found
+    }
+  }
+
+// Auxiliary function to get the value after CID:
+  getValueAfterCID(body: string, structure: string): string {
+    const indexCID = body.indexOf(structure);
+    if (indexCID !== -1) {
+      const start = indexCID + structure.length;
+      return body.substring(start).trim();
+    }
+    return '';
+  }
+
+
+  _traceback() {
+    let current = this.VPDecodedPost;
+
+    const processResponse = (res) => {
+      const jwtDiffusion = res.result;
+      console.log("JWT Diffusion:", jwtDiffusion);
+      this.backendApi.DecodeVPVCJWT(this.globalVars.addressVeramoAgent, jwtDiffusion).subscribe((decodeRes) => {
+        current = decodeRes;
+        this.VPDiffs.push(decodeRes);
+        this.backendApi.VerifyVP(this.globalVars.addressVeramoAgent, decodeRes, decodeRes.holder).subscribe(
+          (verifyRes) => {
+            this.verificationResults.push(verifyRes.res);
+            // Update current and continue the loop if the type is not 'Origin'
+            current = decodeRes;
+            if (current['verifiableCredential'][0]['credentialSubject']['type'] !== 'Origin') {
+              this.backendApi.IPFSRetrieve(this.globalVars.addressIPFSAgent, current['verifiableCredential'][0]['credentialSubject']['url_or_cid_jwt_prev']).subscribe(processResponse);
+            }
+          }
+        );
+      });
+    };
+
+    // Start the loop
+    if (current['verifiableCredential'][0]['credentialSubject']['type'] !== 'origin') {
+      this.backendApi.IPFSRetrieve(this.globalVars.addressIPFSAgent, current['verifiableCredential'][0]['credentialSubject']['url_or_cid_jwt_prev']).subscribe(processResponse);
+    }
+  }
+
+
+
+  _verifyVP(){
+    this.verifyVP(this.VPDecodedPost);
+  }
+
+  private verifyVP(VPDecodedPost: any) {
+    this.backendApi.VerifyVP(this.globalVars.addressVeramoAgent, VPDecodedPost,VPDecodedPost.holder).subscribe(
+      (res: any) => {
+        this.resultVPVerificaton = res.res;
+
+
+
+      });
+  }
+
+  _getAndVerifyVCStatement() {
+
+    const cidVC = this.VPDecodedPost['verifiableCredential'][0]['credentialSubject']['statement_vc_cid_or_url']
+
+
+    console.log(cidVC)
+
+
+    this.backendApi.IPFSRetrieve(this.globalVars.addressIPFSAgent, cidVC).subscribe((res) => {
+      this.VCStatement = res.result;
+      console.log(this.VCStatement)
+
+      this.backendApi.DecodeVPVCJWT(this.globalVars.addressVeramoAgent,this.VCStatement).subscribe((res) => {
+        this.VCStatement = res;
+        console.log(this.VCStatement)
+
+        this.backendApi.VerifyVC(this.globalVars.addressVeramoAgent,this.VCStatement).subscribe( (res)=> {
+          console.log(res);
+          this.resultVCVerificaton = res.res;
+        });
+      });
+    });
+  }
+
+
+
+// Define your set post method using the auxiliary function
   set post(post: PostEntryResponse) {
     // When setting the post, we need to consider repost behavior.
     // If a post is a reposting another post (without a quote), then use the reposted post as the post content.
@@ -58,7 +162,39 @@ export class FeedPostComponent implements OnInit {
     } else {
       this.postContent = post;
     }
+    console.log("POST CONTENT IS " + this.postContent.Body);
+
+    // Check if VP Diffusion structure is present in the post content
+    const vpDiffusionCID = this.getVPDiffusionValue(this.postContent);
+    if (vpDiffusionCID !== '') {
+      this.isVerifiable = true;
+      console.log("VP Diffusion is present in the post content. Value after CID:", vpDiffusionCID);
+
+      this.backendApi.IPFSRetrieve(this.globalVars.addressIPFSAgent,vpDiffusionCID).subscribe((res) => {
+        const jwtDiffusion = res.result;
+        console.log("JWT Diffusion:", jwtDiffusion);
+
+
+        // Parse the JWT and extract the VP Statement
+        this.backendApi.DecodeVPVCJWT(this.globalVars.addressVeramoAgent,jwtDiffusion).subscribe((res) => {
+          this.VPDecodedPost= res;
+          console.log(this.VPDecodedPost);
+
+
+        });
+
+
+      });
+
+
+      // Parse the VP Diffusion and concatenate it to the post content (logic to be implemented)
+    }
+
+    // NOW: when the post is read if VPDiffusionDiffusion or VPDiffusionOrigin are present, we must parse it and
+    // concatenate a text area that specifies the CAVS VP Statement
+    // Then we shall think about the logic of the voting of trustiness
   }
+
 
   @Input() set blocked(value: boolean) {
     this._blocked = value;
