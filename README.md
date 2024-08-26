@@ -1,3 +1,35 @@
+# Integration with CAVS
+
+This integration was developed to research fake news mitigation on a real Online Social Network. The CAVS (Credibility Assessment and Verification System) and this integration were developed as part of a master’s thesis project.
+
+## Prerequisites
+
+- **Node.js**: v14.15.5
+- **NPM**: v7
+- **CAVS** installed from (CAVS on Github)[https://github.com/caltr98/CAVS.git] following its instruction
+
+### Installation
+
+1. **Install Node.js and NPM**
+
+   Use `nvm` to install Node.js v14.15.5:
+
+   ```bash
+   nvm install v14.15.5
+   npm install npm@7 -g
+   ```
+2. Setup project
+  ```bash
+  npm install
+  ```
+
+### Run
+1. Start CAVS
+2. nvm use v14.15.5
+3. npm start
+
+
+
 ![DeSo Logo](src/assets/deso/camelcase_logo.svg)
 
 # About DeSo
