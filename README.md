@@ -19,9 +19,10 @@ This integration was developed to research fake news mitigation on a real Online
    npm install npm@7 -g
    ```
 2. Setup project
-  ```bash
-  npm install
-  ```
+    ```bash
+    nvm use v14.15.5
+    npm install
+    ```
 
 ### Run
 1. Start CAVS
