@@ -26,11 +26,11 @@ This integration was developed to research fake news mitigation on a real Online
 
 ### Run
 1. Start CAVS
-2. nvm use v14.15.5
-3. npm start
-
-
-
+2. Start frontend app
+   ```bash
+   nvm use v14.15.5
+   npm start
+   ```
 ![DeSo Logo](src/assets/deso/camelcase_logo.svg)
 
 # About DeSo
